@@ -1,0 +1,68 @@
+import opennlp.tools.doccat.DoccatModel;
+import opennlp.tools.doccat.DocumentCategorizerME;
+import opennlp.tools.doccat.DocumentSampleStream;
+import opennlp.tools.util.InputStreamFactory;
+import opennlp.tools.util.ObjectStream;
+import opennlp.tools.util.PlainTextByLineStream;
+
+import java.io.*;
+import java.util.Scanner;
+
+public class Chatbot {
+
+    private static DoccatModel model;
+
+    public static void main(String[] args) {
+        try {
+            // Train the model
+            trainModel();
+
+            // Start chatbot interaction
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Hello! How can I assist you today?");
+            while (true) {
+                String userInput = scanner.nextLine();
+                if (userInput.equalsIgnoreCase("exit")) {
+                    System.out.println("Goodbye!");
+                    break;
+                }
+                String response = getResponse(userInput);
+                System.out.println("Chatbot: " + response);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void trainModel() throws IOException {
+        InputStreamFactory inputStreamFactory = () -> new FileInputStream("trainingData.txt");
+        ObjectStream<String> lineStream = new PlainTextByLineStream(inputStreamFactory, "UTF-8");
+        ObjectStream<DocumentSample> sampleStream = new DocumentSampleStream(lineStream);
+        model = DocumentCategorizerME.train("en", sampleStream);
+    }
+
+    private static String getResponse(String input) throws IOException {
+        DocumentCategorizerME categorizer = new DocumentCategorizerME(model);
+        double[] outcomes = categorizer.categorize(input);
+        String category = categorizer.getBestCategory(outcomes);
+
+        switch (category) {
+            case "greeting":
+                return "Hello! How can I help you?";
+            case "question_weather":
+                return "The weather is great today!";
+            case "goodbye":
+                return "Goodbye! Have a nice day!";
+            default:
+                return "I'm sorry, I don't understand.";
+        }
+    }
+}
+greeting	Hello
+greeting	Hi
+greeting	Hey
+question_weather	How's the weather?
+question_weather	What's the weather like?
+goodbye	Bye
+goodbye	Goodbye
+goodbye	See you
